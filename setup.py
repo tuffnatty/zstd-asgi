@@ -1,7 +1,8 @@
 """A compression ASGI middleware using zstd.
 
 Built using starlette under the hood, it can be used as a drop in replacement
-to GZipMiddleware for Starlette or FastAPI.
+to GZipMiddleware for Starlette or FastAPI, if you have a client that supports
+it.
 """
 
 from setuptools import setup  # type: ignore
