@@ -15,6 +15,8 @@ from starlette.responses import (
 )
 from starlette.testclient import TestClient
 
+import zstandard
+
 from zstd_asgi import ZstdMiddleware
 
 
@@ -39,8 +41,10 @@ def test_zstd_responses(test_client_factory):
     client = test_client_factory(app)
     response = client.get("/", headers={"accept-encoding": "zstd"})
     assert response.status_code == 200
-    assert response.text == "x" * 4000
     assert response.headers["Content-Encoding"] == "zstd"
+
+    # no transparent zstd support in requests yet
+    assert zstandard.decompress(response.content, 5000) == b"x" * 4000
     assert int(response.headers["Content-Length"]) < 4000
 
 
@@ -95,8 +99,8 @@ def test_zstd_streaming_response(test_client_factory):
     client = test_client_factory(app)
     response = client.get("/", headers={"accept-encoding": "zstd"})
     assert response.status_code == 200
-    assert response.text == "x" * 4000
     assert response.headers["Content-Encoding"] == "zstd"
+    assert zstandard.decompress(response.content, 5000) == b"x" * 4000
     assert "Content-Length" not in response.headers
 
 

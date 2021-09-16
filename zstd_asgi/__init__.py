@@ -55,10 +55,10 @@ class ZstdResponder:
         self,
         app: ASGIApp,
         level: int,
-        minimum_size: int,
         threads: int,
         write_checksum: bool,
         write_content_size: bool,
+        minimum_size: int,
     ) -> None:
         self.app = app
         self.level = level
