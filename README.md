@@ -103,7 +103,7 @@ sys.getsizeof(gzip.compress(page, compresslevel=6))
 
 ## Compatibility
 
-- [RFC 8478](https://tools.ietf.org/search/rfc8478)
+- [RFC 8878](https://tools.ietf.org/search/rfc8878)
 - [Zstd nginx module](https://github.com/tokers/zstd-nginx-module)
 - [wget2](https://gitlab.com/gnuwget/wget2)
 - Browser support is not known.
