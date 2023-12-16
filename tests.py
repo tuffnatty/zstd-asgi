@@ -1,9 +1,11 @@
-"""Main test for zstd middleware.
+"""Main tests for zstd middleware.
 
-This tests are the same as the ones from starlette.tests.middleware.test_gzip
+Some of these tests are the same as the ones from starlette.tests.middleware.test_gzip
 but using zstd instead.
 """
 import functools
+import gzip
+import io
 
 import pytest
 
@@ -11,6 +13,7 @@ from starlette.applications import Starlette
 from starlette.responses import (
     JSONResponse,
     PlainTextResponse,
+    Response,
     StreamingResponse,
 )
 from starlette.testclient import TestClient
@@ -174,3 +177,33 @@ def test_excluded_handlers():
     assert response.text == "x" * 4000
     assert "Content-Encoding" not in response.headers
     assert int(response.headers["Content-Length"]) == 4000
+
+
+def test_zstd_avoids_double_encoding():
+    # See https://github.com/encode/starlette/pull/1901
+
+    app = Starlette()
+
+    app.add_middleware(ZstdMiddleware, minimum_size=1)
+
+    @app.route("/")
+    def homepage(request):
+        gzip_buffer = io.BytesIO()
+        gzip_file = gzip.GzipFile(mode="wb", fileobj=gzip_buffer)
+        gzip_file.write(b"hello world" * 200)
+        gzip_file.close()
+        body = gzip_buffer.getvalue()
+        return Response(
+            body,
+            headers={
+                "content-encoding": "gzip",
+                "x-gzipped-content-length": str(len(body))
+            }
+        )
+
+    client = TestClient(app)
+    response = client.get("/", headers={"accept-encoding": "zstd"})
+    assert response.status_code == 200
+    assert response.text == "hello world" * 200
+    assert response.headers["Content-Encoding"] == "gzip"
+    assert response.headers["Content-Length"] == response.headers["x-gzipped-content-length"]
