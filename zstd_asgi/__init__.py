@@ -1,4 +1,6 @@
 import io
+import re
+from typing import List, Union, NoReturn
 
 from starlette.datastructures import Headers, MutableHeaders
 from starlette.middleware.gzip import GZipResponder
@@ -8,6 +10,8 @@ import zstandard
 
 
 class ZstdMiddleware:
+    """Zstd middleware public interface."""
+
     def __init__(
         self,
         app: ASGIApp,
@@ -17,7 +21,30 @@ class ZstdMiddleware:
         write_checksum: bool = False,
         write_content_size: bool = True,
         gzip_fallback: bool = True,
+        excluded_handlers: Union[List, None] = None,
     ) -> None:
+        """
+        Arguments.
+
+        level: Integer compression level.
+            Valid values are all negative integers through 22.
+            Negative levels effectively engage --fast mode from the zstd CLI.
+        minimum_size: Only compress responses that are bigger than this value in bytes.
+        threads: Number of threads to use to compress data concurrently.
+            When set, compression operations are performed on multiple threads.
+            The default value (0) disables multi-threaded compression.
+            A value of -1 means to set the number of threads to the number
+            of detected logical CPUs.
+        write_checksum: If True, a 4 byte content checksum will be written with
+            the compressed data, allowing the decompressor to perform content
+            verification.
+        write_content_size: If True (the default), the decompressed content size
+            will be included in the header of the compressed data. This data
+            will only be written if the compressor knows the size of the input
+            data.
+        gzip_fallback: If True, uses gzip encoding if br is not in the Accept-Encoding header.
+        excluded_handlers: List of handlers to be excluded from being compressed.
+        """
         self.app = app
         self.level = level
         self.minimum_size = minimum_size
@@ -25,29 +52,39 @@ class ZstdMiddleware:
         self.write_checksum = write_checksum
         self.write_content_size = write_content_size
         self.gzip_fallback = gzip_fallback
+        if excluded_handlers:
+            self.excluded_handlers = [re.compile(path) for path in excluded_handlers]
+        else:
+            self.excluded_handlers = []
 
     async def __call__(self,
                        scope: Scope,
                        receive: Receive,
                        send: Send) -> None:
-        if scope["type"] == "http":
-            accept_encoding = Headers(scope=scope).get("Accept-Encoding", "")
-            if "zstd" in accept_encoding:
-                responder = ZstdResponder(
-                    self.app,
-                    self.level,
-                    self.threads,
-                    self.write_checksum,
-                    self.write_content_size,
-                    self.minimum_size,
-                )
-                await responder(scope, receive, send)
-                return
-            if self.gzip_fallback and "gzip" in accept_encoding:
-                responder = GZipResponder(self.app, self.minimum_size)
-                await responder(scope, receive, send)
-                return
+        if self._is_handler_excluded(scope) or scope["type"] != "http":
+            return await self.app(scope, receive, send)
+        accept_encoding = Headers(scope=scope).get("Accept-Encoding", "")
+        if "zstd" in accept_encoding:
+            responder = ZstdResponder(
+                self.app,
+                self.level,
+                self.threads,
+                self.write_checksum,
+                self.write_content_size,
+                self.minimum_size,
+            )
+            await responder(scope, receive, send)
+            return
+        if self.gzip_fallback and "gzip" in accept_encoding:
+            responder = GZipResponder(self.app, self.minimum_size)
+            await responder(scope, receive, send)
+            return
         await self.app(scope, receive, send)
+
+    def _is_handler_excluded(self, scope: Scope) -> bool:
+        handler = scope.get("path", "")
+
+        return any(pattern.search(handler) for pattern in self.excluded_handlers)
 
 
 class ZstdResponder:
@@ -144,5 +181,5 @@ class ZstdResponder:
             await self.send(message)
 
 
-async def unattached_send(message: Message) -> None:
+async def unattached_send(message: Message) -> NoReturn:
     raise RuntimeError("send awaitable not set")  # pragma: no cover

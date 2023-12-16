@@ -60,7 +60,8 @@ app.add_middleware(
   threads=0,
   write_checksum=True,
   write_content_size=False,
-  gzip_fallback=True
+  gzip_fallback=True,
+  excluded_handlers=None,
 )
 ```
 
@@ -72,6 +73,7 @@ app.add_middleware(
 - `write_checksum`: If True, a 4 byte content checksum will be written with the compressed data, allowing the decompressor to perform content verification.
 - `write_content_size`: If True (the default), the decompressed content size will be included in the header of the compressed data. This data will only be written if the compressor knows the size of the input data.
 - `gzip_fallback`: If `True`, uses gzip encoding if `zstd` is not in the Accept-Encoding header.
+- `excluded_handlers`: List of handlers to be excluded from being compressed.
 
 ## Performance
 
