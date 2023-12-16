@@ -9,6 +9,9 @@ from starlette.types import ASGIApp, Message, Receive, Scope, Send
 import zstandard
 
 
+__version__ = "0.2"
+
+
 class ZstdMiddleware:
     """Zstd middleware public interface."""
 
