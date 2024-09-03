@@ -1,0 +1,36 @@
+[tool.pdm]
+
+[tool.pdm.dev-dependencies]
+dev = [
+    "flake8>=7.1.1",
+    "trio>=0.26.2",
+    "httpx>=0.27.0",
+    "pytest>=8.3.2",
+    "requests>=2.32.3",
+]
+
+[project]
+name = "zstd-asgi"
+version = "0.2"
+description = "Zstd compression ASGI middleware"
+readme = "README.md"
+authors = [{ name = "Phil Krylov", email = "phil@krylov.eu" }]
+classifiers = [
+    "Environment :: Web Environment",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+requires-python = ">=3.8.1"
+dependencies = ["starlette>=0.13.4", "zstandard>=0.22.0"]
+license = { text = "MIT" }
+
+[project.urls]
+Homepage = "https://github.com/tuffnatty/zstd-asgi"
+
+[build-system]
+requires = ["pdm-backend"]
+build-backend = "pdm.backend"
