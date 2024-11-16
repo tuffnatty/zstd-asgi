@@ -180,12 +180,11 @@ class ZstdResponder:
             more_body = message.get("more_body", False)
 
             self.zstd_file.write(body)
+            self.zstd_file.flush(zstandard.FLUSH_FRAME)
+            message["body"] = self.zstd_buffer.getvalue()
             if not more_body:
-                self.zstd_file.flush(zstandard.FLUSH_FRAME)
-                message["body"] = self.zstd_buffer.getvalue()
                 self.zstd_file.close()
             else:
-                message["body"] = self.zstd_buffer.getvalue()
                 self.zstd_buffer.seek(0)
                 self.zstd_buffer.truncate()
 
