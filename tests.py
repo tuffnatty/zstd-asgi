@@ -47,8 +47,8 @@ def test_zstd_responses(test_client_factory):
     assert response.headers["Content-Encoding"] == "zstd"
 
     # no transparent zstd support in requests yet
-    assert zstandard.decompress(response.content, 5000) == b"x" * 4000
-    assert int(response.headers["Content-Length"]) < 4000
+    assert response.content == b"x" * 4000
+    assert int(response.headers["Content-Length"]) == 18
 
 
 def test_zstd_not_in_accept_encoding(test_client_factory):
@@ -99,7 +99,7 @@ def test_zstd_streaming_response(test_client_factory):
     response = client.get("/", headers={"accept-encoding": "zstd"})
     assert response.status_code == 200
     assert response.headers["Content-Encoding"] == "zstd"
-    assert zstandard.decompress(response.content, 5000) == b"x" * 4000
+    assert response.content == b"x" * 4000
     assert "Content-Length" not in response.headers
 
 
@@ -132,7 +132,7 @@ def test_gzip_fallback(test_client_factory):
     assert response.status_code == 200
     assert response.text == "x" * 4000
     assert response.headers["Content-Encoding"] == "gzip"
-    assert int(response.headers["Content-Length"]) < 4000
+    assert int(response.headers["Content-Length"]) == 39
 
 
 def test_gzip_fallback_false(test_client_factory):
