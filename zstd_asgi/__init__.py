@@ -9,7 +9,7 @@ from starlette.types import ASGIApp, Message, Receive, Scope, Send
 import zstandard
 
 
-__version__ = "0.2"
+__version__ = "0.3"
 
 
 class ZstdMiddleware:

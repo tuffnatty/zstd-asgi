@@ -10,7 +10,7 @@ from setuptools import setup  # type: ignore
 
 setup(
     name="zstd-asgi",
-    version="0.2",
+    version="0.3",
     url="https://github.com/tuffnatty/zstd-asgi",
     license="MIT",
     author="Phil Krylov",
@@ -20,7 +20,7 @@ setup(
     packages=["zstd_asgi"],
     python_requires=">=3.8",
     include_package_data=True,
-    install_requires=["starlette>=0.13.4", "zstandard>=0.22.0"],
+    install_requires=["starlette>=0.22.0", "zstandard>=0.22.0"],
     platforms="any",
     zip_safe=False,
     classifiers=[
