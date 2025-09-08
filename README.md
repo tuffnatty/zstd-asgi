@@ -86,21 +86,24 @@ import sys
 
 import brotli
 import requests
-import zstandard
+try:
+    from compression import zstd
+except ImportError:
+    from backports import zstd
 
 page = requests.get("https://github.com/fullonic/brotli-asgi").content
-%timeit zstandard.ZstdCompressor(level=3).compress(page)
-# 788 µs ± 9.99 µs per loop (mean ± std. dev. of 7 runs, 1000 loops each)
-sys.getsizeof(zstandard.ZstdCompressor(level=3).compress(page))
-# 36381
+%timeit zstd.compress(page, level=3)
+# 718 μs ± 37.2 μs per loop (mean ± std. dev. of 7 runs, 1,000 loops each)
+sys.getsizeof(zstd.compress(page, level=3))
+# 47718
 %timeit brotli.compress(page, quality=4)
-# 2.55 ms ± 142 µs per loop (mean ± std. dev. of 7 runs, 100 loops each)
+# 2.64 ms ± 246 μs per loop (mean ± std. dev. of 7 runs, 100 loops each)
 sys.getsizeof(brotli.compress(page, quality=4))
-# 34361
+# 45095
 %timeit gzip.compress(page, compresslevel=6)
-# 4.05 ms ± 95 µs per loop (mean ± std. dev. of 7 runs, 100 loops each)
+# 4.89 ms ± 216 μs per loop (mean ± std. dev. of 7 runs, 100 loops each)
 sys.getsizeof(gzip.compress(page, compresslevel=6))
-# 36760
+# 52577
 ```
 
 ## Compatibility
