@@ -108,4 +108,5 @@ sys.getsizeof(gzip.compress(page, compresslevel=6))
 - [RFC 8878](https://datatracker.ietf.org/doc/rfc8878/)
 - [Zstd nginx module](https://github.com/tokers/zstd-nginx-module)
 - [wget2](https://gitlab.com/gnuwget/wget2)
-- [Browser support](https://caniuse.com/zstd): can be enabled manually in recent Chrome and Edge versions.
+- [Browser support](https://caniuse.com/zstd): transparent support in recent Chrome/Edge/Opera and Firefox versions.
+- [encode/httpx](https://github.com/encode/httpx/releases/tag/0.27.1)
