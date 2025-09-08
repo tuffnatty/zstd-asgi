@@ -18,7 +18,7 @@ setup(
     description="Zstd compression ASGI middleware",
     long_description=__doc__,
     packages=["zstd_asgi"],
-    python_requires=">=3.8",
+    python_requires=">=3.9",
     include_package_data=True,
     install_requires=[
         "starlette>=0.22.0",
@@ -29,7 +29,6 @@ setup(
     classifiers=[
         "Environment :: Web Environment",
         "Operating System :: OS Independent",
-        "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
