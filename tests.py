@@ -22,6 +22,22 @@ from starlette.testclient import TestClient
 
 import zstandard
 
+try:
+    from starlette.testclient import httpx
+except ImportError:
+    # starlette does not use httpx yet
+    def decompressed_response(response):
+        return zstandard.decompress(response, 5000)
+else:
+    if 'zstd' in httpx._decoders.SUPPORTED_DECODERS:
+        def decompressed_response(response):
+            return response.content
+    else:
+        # no transparent zstd support in httpx yet
+        def decompressed_response(response):
+            return zstandard.decompress(response, 5000)
+        
+
 from zstd_asgi import ZstdMiddleware
 
 
@@ -45,9 +61,7 @@ def test_zstd_responses(test_client_factory):
     response = client.get("/", headers={"accept-encoding": "zstd"})
     assert response.status_code == 200
     assert response.headers["Content-Encoding"] == "zstd"
-
-    # no transparent zstd support in requests yet
-    assert zstandard.decompress(response.content, 5000) == b"x" * 4000
+    assert decompressed_response(response) == b"x" * 4000
     assert int(response.headers["Content-Length"]) < 4000
 
 
@@ -99,7 +113,7 @@ def test_zstd_streaming_response(test_client_factory):
     response = client.get("/", headers={"accept-encoding": "zstd"})
     assert response.status_code == 200
     assert response.headers["Content-Encoding"] == "zstd"
-    assert zstandard.decompress(response.content, 5000) == b"x" * 4000
+    assert decompressed_response(response) == b"x" * 4000
     assert "Content-Length" not in response.headers
 
 
