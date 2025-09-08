@@ -6,10 +6,13 @@ from starlette.datastructures import Headers, MutableHeaders
 from starlette.middleware.gzip import GZipResponder
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
-import zstandard
+try:
+    from compression.zstd import ZstdCompressor, CompressionParameter
+except ImportError:
+    from backports.zstd import ZstdCompressor, CompressionParameter
 
 
-__version__ = "0.3"
+__version__ = "1.0"
 
 
 class ZstdMiddleware:
@@ -107,13 +110,12 @@ class ZstdResponder:
         self.initial_message = {}  # type: Message
         self.started = False
         self.content_encoding_set = False
-        self.zstd_buffer = io.BytesIO()
-        self.zstd_file = zstandard.ZstdCompressor(
-            level=level,
-            threads=threads,
-            write_checksum=write_checksum,
-            write_content_size=write_content_size,
-        ).stream_writer(self.zstd_buffer)
+        self.zstd_compressor = ZstdCompressor(
+            options={CompressionParameter.compression_level: level,
+                     CompressionParameter.nb_workers: threads,
+                     CompressionParameter.checksum_flag: write_checksum,
+                     CompressionParameter.content_size_flag: write_content_size},
+        )
 
     async def __call__(self,
                        scope: Scope,
@@ -145,10 +147,8 @@ class ZstdResponder:
                 await self.send(message)
             elif not more_body:
                 # Standard Zstd response.
-                self.zstd_file.write(body)
-                self.zstd_file.flush(zstandard.FLUSH_FRAME)
-                body = self.zstd_buffer.getvalue()
-                self.zstd_file.close()
+                body = self.zstd_compressor.compress(body,
+                        ZstdCompressor.FLUSH_FRAME)
 
                 headers = MutableHeaders(raw=self.initial_message["headers"])
                 headers["Content-Encoding"] = "zstd"
@@ -165,11 +165,8 @@ class ZstdResponder:
                 headers.add_vary_header("Accept-Encoding")
                 del headers["Content-Length"]
 
-                self.zstd_file.write(body)
-                self.zstd_file.flush()
-                message["body"] = self.zstd_buffer.getvalue()
-                self.zstd_buffer.seek(0)
-                self.zstd_buffer.truncate()
+                message["body"] = self.zstd_compressor.compress(body,
+                        ZstdCompressor.FLUSH_BLOCK)
 
                 await self.send(self.initial_message)
                 await self.send(message)
@@ -179,15 +176,9 @@ class ZstdResponder:
             body = message.get("body", b"")
             more_body = message.get("more_body", False)
 
-            self.zstd_file.write(body)
-            if not more_body:
-                self.zstd_file.flush(zstandard.FLUSH_FRAME)
-                message["body"] = self.zstd_buffer.getvalue()
-                self.zstd_file.close()
-            else:
-                message["body"] = self.zstd_buffer.getvalue()
-                self.zstd_buffer.seek(0)
-                self.zstd_buffer.truncate()
+            message["body"] = self.zstd_compressor.compress(body,
+                    ZstdCompressor.FLUSH_BLOCK if more_body
+                    else ZstdCompressor.FLUSH_FRAME)
 
             await self.send(message)
 

@@ -20,14 +20,17 @@ from starlette.responses import (
 from starlette.routing import Route
 from starlette.testclient import TestClient
 
-import zstandard
+try:
+    from compression import zstd
+except ImportError:
+    from backports import zstd
 
 try:
     from starlette.testclient import httpx
 except ImportError:
     # starlette does not use httpx yet
     def decompressed_response(response):
-        return zstandard.decompress(response, 5000)
+        return zstd.decompress(response)
 else:
     if 'zstd' in httpx._decoders.SUPPORTED_DECODERS:
         def decompressed_response(response):
@@ -35,7 +38,7 @@ else:
     else:
         # no transparent zstd support in httpx yet
         def decompressed_response(response):
-            return zstandard.decompress(response, 5000)
+            return zstd.decompress(response)
         
 
 from zstd_asgi import ZstdMiddleware
