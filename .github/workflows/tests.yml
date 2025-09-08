@@ -30,7 +30,7 @@ jobs:
         set -x
         python -m pip install --upgrade pip
         pip install flake8 pytest starlette 'anyio[trio]' 'httpx<28'
-        V="${{ matrix.python_version }}"
+        V="${{ matrix.python-version }}"
         V="${V#3.}"
         [ "${V%%.*}" -ge 14 ] || pip install backports.zstd
     - name: Lint with flake8
