@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [3.8, 3.9, "3.10", 3.11, 3.12, 3.13, 3.14]
+        python-version: [3.8, 3.9, "3.10", 3.11, 3.12, 3.13, "3.14.0-rc.2"]
 
     steps:
     - uses: actions/checkout@v5
@@ -29,7 +29,8 @@ jobs:
         python -m pip install --upgrade pip
         pip install flake8 pytest starlette 'anyio[trio]' 'httpx<28'
         V="${{ matrix.python_version }}"
-        [ "${V#3.}" -ge 14 ] || pip install backports.zstd
+        V="${V#3.}"
+        [ "${V%%.*}" -ge 14 ] || pip install backports.zstd
     - name: Lint with flake8
       run: |
         # stop the build if there are Python syntax errors or undefined names
