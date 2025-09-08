@@ -27,6 +27,7 @@ jobs:
         python-version: ${{ matrix.python-version }}
     - name: Install dependencies
       run: |
+        set -x
         python -m pip install --upgrade pip
         pip install flake8 pytest starlette 'anyio[trio]' 'httpx<28'
         V="${{ matrix.python_version }}"
