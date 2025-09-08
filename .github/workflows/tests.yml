@@ -5,9 +5,9 @@ name: Tests
 
 on:
   push:
-    branches: [ master ]
+    branches: [master]
   pull_request:
-    branches: [ master ]
+    branches: [master]
 
 jobs:
   tests:
@@ -17,27 +17,28 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: [3.9, "3.10", 3.11, 3.12, 3.13, "3.14.0-rc.2"]
+        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13", "3.14"]
 
     steps:
-    - uses: actions/checkout@v5
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v6
-      with:
-        python-version: ${{ matrix.python-version }}
-    - name: Install dependencies
-      run: |
-        set -x
-        python -m pip install --upgrade pip
-        pip install flake8 pytest starlette 'anyio[trio]' 'httpx<28'
-        V="${{ matrix.python-version }}"
-        V="${V#3.}"
-        [ "${V%%.*}" -ge 14 ] || pip install backports.zstd
-    - name: Lint with flake8
-      run: |
-        # stop the build if there are Python syntax errors or undefined names
-        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=95 --statistics
-    - name: Test with pytest
-      run: |
-        pytest tests.py
+      - uses: actions/checkout@v5
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+          allow-prereleases: true
+
+      - name: Install dependencies
+        run: |
+          set -x
+          python -m pip install --upgrade pip
+          pip install flake8 pytest starlette 'anyio[trio]' 'httpx<28' .
+
+      - name: Lint with flake8
+        run: |
+          # stop the build if there are Python syntax errors or undefined names
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+          flake8 . --count --exit-zero --max-complexity=10 --max-line-length=95 --statistics
+
+      - name: Test with pytest
+        run: |
+          pytest tests.py
