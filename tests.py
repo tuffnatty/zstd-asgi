@@ -30,7 +30,7 @@ try:
 except ImportError:
     # starlette does not use httpx yet
     def decompressed_response(response):
-        return zstd.decompress(response)
+        return zstd.decompress(response.content)
 else:
     if 'zstd' in httpx._decoders.SUPPORTED_DECODERS:
         def decompressed_response(response):
@@ -38,7 +38,7 @@ else:
     else:
         # no transparent zstd support in httpx yet
         def decompressed_response(response):
-            return zstd.decompress(response)
+            return zstd.decompress(response.content)
         
 
 from zstd_asgi import ZstdMiddleware
