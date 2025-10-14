@@ -48,7 +48,7 @@ class ZstdMiddleware:
             will be included in the header of the compressed data. This data
             will only be written if the compressor knows the size of the input
             data.
-        gzip_fallback: If True, uses gzip encoding if br is not in the Accept-Encoding header.
+        gzip_fallback: If True, uses gzip encoding if 'zstd' is not in the Accept-Encoding header.
         excluded_handlers: List of handlers to be excluded from being compressed.
         """
         self.app = app
