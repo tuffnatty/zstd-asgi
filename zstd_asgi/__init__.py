@@ -11,6 +11,7 @@ try:
 except ImportError:
     from backports.zstd import ZstdCompressor, CompressionParameter
 
+from .headers import get_preferred_encoding, SupportedEncoding
 
 __version__ = "1.0"
 
@@ -27,6 +28,7 @@ class ZstdMiddleware:
         write_checksum: bool = False,
         write_content_size: bool = True,
         gzip_fallback: bool = True,
+        respect_q_factors: bool = False,
         excluded_handlers: Union[List, None] = None,
     ) -> None:
         """
@@ -49,6 +51,10 @@ class ZstdMiddleware:
             will only be written if the compressor knows the size of the input
             data.
         gzip_fallback: If True, uses gzip encoding if 'zstd' is not in the Accept-Encoding header.
+        respect_q_factors: If True, parses 'Accept-Encoding' q-factors
+            to strictly follow client preference (RFC 9110).
+            If False (default), uses the faster "server-preferred"
+            logic ('zstd' if present, then 'gzip' if present).
         excluded_handlers: List of handlers to be excluded from being compressed.
         """
         self.app = app
@@ -58,6 +64,7 @@ class ZstdMiddleware:
         self.write_checksum = write_checksum
         self.write_content_size = write_content_size
         self.gzip_fallback = gzip_fallback
+        self.respect_q_factors = respect_q_factors
         if excluded_handlers:
             self.excluded_handlers = [re.compile(path) for path in excluded_handlers]
         else:
@@ -69,8 +76,24 @@ class ZstdMiddleware:
                        send: Send) -> None:
         if self._is_handler_excluded(scope) or scope["type"] != "http":
             return await self.app(scope, receive, send)
+        
         accept_encoding = Headers(scope=scope).get("Accept-Encoding", "")
-        if "zstd" in accept_encoding:
+        encoding_to_use: SupportedEncoding
+        
+        if self.respect_q_factors:
+            encoding_to_use = get_preferred_encoding(
+                accept_encoding, 
+                self.gzip_fallback
+            )
+        else:
+            if "zstd" in accept_encoding:
+                encoding_to_use = "zstd"
+            elif self.gzip_fallback and "gzip" in accept_encoding:
+                encoding_to_use = "gzip"
+            else:
+                encoding_to_use = "identity"
+
+        if encoding_to_use == "zstd":
             responder = ZstdResponder(
                 self.app,
                 self.level,
@@ -81,10 +104,12 @@ class ZstdMiddleware:
             )
             await responder(scope, receive, send)
             return
-        if self.gzip_fallback and "gzip" in accept_encoding:
+            
+        if encoding_to_use == "gzip":
             responder = GZipResponder(self.app, self.minimum_size)
             await responder(scope, receive, send)
             return
+
         await self.app(scope, receive, send)
 
     def _is_handler_excluded(self, scope: Scope) -> bool:
