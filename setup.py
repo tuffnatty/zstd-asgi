@@ -18,6 +18,7 @@ setup(
     description="Zstd compression ASGI middleware",
     long_description=__doc__,
     packages=["zstd_asgi"],
+    package_data={"zstd_asgi": ["py.typed"]},
     python_requires=">=3.9",
     include_package_data=True,
     install_requires=[
